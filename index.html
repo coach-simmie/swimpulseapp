@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Swim Pulse Performance</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0066ff">
+    <link rel="icon" href="icon-192.png">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <style>
+        body { font-family: 'Segoe UI', Arial, sans-serif; margin:0; background:#f0f7ff; }
+        header { background:#0066ff; color:white; padding:15px; text-align:center; }
+        h1 { margin:0; font-size:1.4em; }
+        nav { display:flex; background:#0044cc; }
+        nav button { flex:1; padding:15px; border:none; background:none; color:white; font-size:1em; cursor:pointer; }
+        nav button:active { background:#003399; }
+        section { padding:20px; display:none; }
+        .active { display:block !important; }
+        .card { background:white; border-radius:12px; padding:15px; margin:15px 0; box-shadow:0 2px 10px rgba(0,0,0,0.1); }
+        select, input, button { padding:12px; margin:8px 0; border-radius:8px; border:1px solid #ccc; width:100%; box-sizing:border-box; }
+        button { background:#0066ff; color:white; border:none; font-weight:bold; }
+        button:active { background:#0044cc; }
+        ul { padding:0; list-style:none; }
+        li { background:#e3f2fd; margin:10px 0; padding:15px; border-radius:10px; }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Swim Pulse Performance</h1>
+    </header>
+
+    <nav>
+        <button onclick="show('workouts')">Workouts</button>
+        <button onclick="show('diets')">Diet</button>
+        <button onclick="show('assessments')">Assessments</button>
+        <button onclick="show('goals')">Goals</button>
+    </nav>
+
+    <!-- WORKOUTS -->
+    <section id="workouts" class="active">
+        <h2>Workouts</h2>
+        <select id="level">
+            <option value="beginner">Beginner</option>
+            <option value="intermediate">Intermediate</option>
+            <option value="advanced">Advanced</option>
+        </select>
+        <button onclick="loadWorkouts()">Load Workouts</button>
+        <div id="workout-list"></div>
+    </section>
+
+    <!-- DIET -->
+    <section id="diets">
+        <h2>Diet Plans</h2>
+        <select id="diet-level">
+            <option value="beginner">Beginner</option>
+            <option value="intermediate">Intermediate</option>
+            <option value="advanced">Advanced</option>
+        </select>
+        <button onclick="loadDiets()">Show Diet Plan</button>
+        <div id="diet-list"></div>
+    </section>
+
+    <!-- ASSESSMENTS -->
+    <section id="assessments">
+        <h2>Assessment Schedule</h2>
+        <div class="card">
+            <input type="text" id="assessment-type" placeholder="e.g., 400m Freestyle TT">
+            <input type="date" id="assessment-date">
+            <button onclick="addAssessment()">Add Assessment</button>
+        </div>
+        <ul id="assessment-list"></ul>
+    </section>
+
+    <!-- GOALS -->
+    <section id="goals">
+        <h2>Set & Track Goals</h2>
+        <div class="card">
+            <input type="text" id="goal-desc" placeholder="e.g., Drop 100m free from 1:15 to 1:08">
+            <input type="number" id="goal-months" placeholder="Timeline in months" min="1">
+            <button onclick="addGoal()">Create Goal</button>
+        </div>
+        <ul id="goal-list"></ul>
+    </section>
+
+    <script>
+        function show(id) {
+            document.querySelectorAll('section').forEach(s => s.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+        }
+
+        // Sample data – you can expand this as much as you want
+        const workouts = {
+            beginner: [
+                "Warm-up: 200m easy swim",
+                "Dryland: 3×10 push-ups, 3×20 squats, 3×30s plank",
+                "Main set: 8×50m freestyle @ 1:00 (easy)"
+            ],
+            intermediate: [
+                "Warm-up: 400m swim + 200m drill",
+                "Dryland: 4×15 push-ups, 4×30 lunges, 4×60s plank",
+                "Main set: 6×100m freestyle @ 1:40 descending"
+            ],
+            advanced: [
+                "Warm-up: 800m mixed swim",
+                "Dryland: 5×20 push-ups, 5×40 squats, 5×90s plank",
+                "Main set: 10×100m IM @ 1:30 + 4×200m free @ 2:45"
+            ]
+        };
+
+        const diets = {
+            beginner: "High-carb focus → Oatmeal breakfast, chicken-rice lunch, salmon + sweet potato dinner",
+            intermediate: "Balanced macros → Eggs + avocado, turkey quinoa bowl, steak + veggies",
+            advanced: "Performance nutrition → Protein oats, double chicken portions, carb reload on hard days"
+        };
+
+        // LocalStorage helpers
+        const save = (k,v) => localStorage.setItem(k, JSON.stringify(v));
+        const load = (k) => JSON.parse(localStorage.getItem(k)) || [];
+
+        // Workouts & Diets
+        function loadWorkouts() {
+            const level = document.getElementById('level').value;
+            const list = document.getElementById('workout-list');
+            list.innerHTML = workouts[level].map(w => `<div class="card">${w}</div>`).join('');
+        }
+
+        function loadDiets() {
+            const level = document.getElementById('diet-level').value;
+            document.getElementById('diet-list').innerHTML = `<div class="card">${diets[level]}</div>`;
+        }
+
+        // Assessments
+        function addAssessment() {
+            const type = document.getElementById('assessment-type').value.trim();
+            const date = document.getElementById('assessment-date').value;
+            if (!type || !date) return alert("Please fill both fields");
+            const list = load('assessments');
+            list.push({type, date});
+            save('assessments', list);
+            renderAssessments();
+            document.getElementById('assessment-type').value = '';
+        }
+
+        function renderAssessments() {
+            const ul = document.getElementById('assessment-list');
+            ul.innerHTML = load('assessments')
+                .map(a => `<li><strong>${a.type}</strong> → ${new Date(a.date).toLocaleDateString()}</li>`)
+                .join('');
+        }
+
+        // Goals
+        function addGoal() {
+            const desc = document.getElementById('goal-desc').value.trim();
+            const months = parseInt(document.getElementById('goal-months').value);
+            if (!desc || !months) return alert("Complete both fields");
+            const goals = load('goals');
+            goals.push({desc, months, created: new Date().toISOString()});
+            save('goals', goals);
+            renderGoals();
+            document.getElementById('goal-desc').value = '';
+            document.getElementById('goal-months').value = '';
+        }
+
+        function renderGoals() {
+            const ul = document.getElementById('goal-list');
+            ul.innerHTML = load('goals')
+                .map(g => `<li><strong>${g.desc}</strong><br>Timeline: ${g.months} months (set ${new Date(g.created).toLocaleDateString()})</li>`)
+                .join('');
+        }
+
+        // Init
+        renderAssessments();
+        renderGoals();
+
+        // PWA Service Worker
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js');
+        }
+    </script>
+</body>
+</html>
